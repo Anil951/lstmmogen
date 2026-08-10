@@ -1,5 +1,7 @@
+from ActionConditionedLSTM.config import GENERATED_MOTION_PATH
 import numpy as np
 import cv2
+import os
 
 def render_perspective_video(motion_data, bones, h_axis, v_axis, output_path, flip_h=False, flip_v=False):
     """
@@ -109,6 +111,7 @@ def generate_multi_pov_videos(npy_filepath):
         flip_h=False, flip_v=False
     )
 
-# Run the script
-# generate_multi_pov_videos(r'HumanAct12_Categorized\jump_vertical\P08G01R04F1669T1833A0402.npy')
-generate_multi_pov_videos(r'E:\Abhiram Documents\BITS_4SEM\PROJECT_New\iofiles\generated_motion.npy')
+if __name__ == "__main__":
+    motion_file = GENERATED_MOTION_PATH
+    if os.path.exists(motion_file):
+        generate_multi_pov_videos(motion_file)

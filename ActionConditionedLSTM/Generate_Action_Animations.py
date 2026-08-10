@@ -2,9 +2,10 @@ import os
 import glob
 import numpy as np
 import tensorflow as tf
+import json
 from tensorflow.keras.models import load_model
 from losses import weighted_loss
-from Dataset_Preprocessor import extract_13_keypoints_2d, normalize_keypoints_pose_extractor
+from dataset_preprocessor import extract_13_keypoints_2d, normalize_keypoints_pose_extractor
 from config import (
     ACTION_CLASSES,
     CLASS_MAP,
@@ -12,9 +13,10 @@ from config import (
     NUM_JOINTS,
     NUM_CLASSES,
     MODEL_PATH,
-    GENERATED_MOTION_PATH as OUTPUT_NPY,
+    GENERATED_MOTION_PATH,
     SEED_INFO_PATH,
-    WORKSPACE_DIR
+    WORKSPACE_DIR,
+    ACTION_CHOICE
 )
 
 def normalize_keypoints_pose_extractor(pts_frame):
@@ -104,7 +106,7 @@ def load_initial_frame_from_json(json_path):
     return kpts
 
 def main():
-    action_choice = 'jump_vertical'
+    action_choice = ACTION_CHOICE
     cls_idx = CLASS_MAP[action_choice]
 
     raw_dataset_dir = os.path.join(WORKSPACE_DIR, 'dataset', 'HumanAct12_Categorized', action_choice)
@@ -141,8 +143,9 @@ def main():
     generated = predictor.generate_points(seed_sequence, action_name=action_choice, num_iterations=num_gen_frames)
 
     # Save generated motion
-    np.save(OUTPUT_NPY, generated)
-    print(f"Saved generated motion (shape: {generated.shape}) to '{OUTPUT_NPY}'")
+    output_npy = GENERATED_MOTION_PATH
+    np.save(output_npy, generated)
+    print(f"Saved generated motion (shape: {generated.shape}) to '{output_npy}'")
 
     # Save seed info for side-by-side preview comparison
     np.savez(SEED_INFO_PATH,

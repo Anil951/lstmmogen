@@ -27,29 +27,29 @@ Left Ankle
 Right Ankle
 '''
 
+from ActionConditionedLSTM.config import (
+    YOLO_WEIGHTS_DIR, YOLO_DETECTION_MODEL, YOLO_POSE_MODEL,
+    YOLO_CONF_THRESHOLD, YOLO_IOU_THRESHOLD, YOLO_DEVICE,
+    TARGET_IMAGE_PATH, NORMALIZED_KEYPOINTS_PATH, SKELETON_BONES,
+    KEYPOINT_NAMES, MANUAL_ANNOTATION_PADDING
+)
+
 settings.update({
-    "weights_dir": "./iofiles"
+    "weights_dir": YOLO_WEIGHTS_DIR
 })
-det_model = YOLO('yolo11x.pt')
-pose_model = YOLO('yolo11x-pose.pt')
-device = 'cpu'
-image_path = './iofiles/f99a3cd6-93c4-43aa-a155-e76b03578dd8.jpg'
-save_img_path = f'./iofiles/cropped_{image_path.split("/")[2]}'
-save_kpts_path = './iofiles/normalized_keypoints.json'
+det_model = YOLO(YOLO_DETECTION_MODEL)
+pose_model = YOLO(YOLO_POSE_MODEL)
+device = YOLO_DEVICE
+image_path = TARGET_IMAGE_PATH
+
+# Calculate cropped image path dynamically from image_path so changing target image works naturally
+image_name = os.path.basename(image_path)
+save_img_path = os.path.join(os.path.dirname(image_path), f"cropped_{image_name}")
+save_kpts_path = NORMALIZED_KEYPOINTS_PATH
 
 # New 13-point skeleton (Index 0 is the consolidated Face point)
-NEW_SKELETON = [
-    (0, 1), (0, 2), (1, 2),          # Face to shoulders & shoulder line
-    (1, 3), (3, 5), (2, 4), (4, 6),  # Arms
-    (1, 7), (2, 8), (7, 8),          # Torso
-    (7, 9), (9, 11), (8, 10), (10, 12) # Legs
-]
-
-KEYPOINT_NAMES = [
-    "Face", "L_Shoulder", "R_Shoulder", "L_Elbow", "R_Elbow", 
-    "L_Wrist", "R_Wrist", "L_Hip", "R_Hip", "L_Knee", "R_Knee", 
-    "L_Ankle", "R_Ankle"
-]
+NEW_SKELETON = SKELETON_BONES
+KEYPOINT_NAMES = KEYPOINT_NAMES
 
 
 def manual_annotation_gui(image):
@@ -219,7 +219,7 @@ if __name__ == "__main__":
         exit()
 
     print("Running detection...")
-    det_results = det_model(image, conf=0.25, iou=0.45, classes=[0], device=device, verbose=False)
+    det_results = det_model(image, conf=YOLO_CONF_THRESHOLD, iou=YOLO_IOU_THRESHOLD, classes=[0], device=device, verbose=False)
     
     shifted_kpts = []
     bbox = []
@@ -234,7 +234,7 @@ if __name__ == "__main__":
         x_min, y_min = np.min(pts_array, axis=0)
         x_max, y_max = np.max(pts_array, axis=0)
         
-        padding = 200
+        padding = MANUAL_ANNOTATION_PADDING
         h, w = image.shape[:2]
         x1 = max(0, int(x_min) - padding)
         y1 = max(0, int(y_min) - padding)
@@ -252,7 +252,7 @@ if __name__ == "__main__":
         x1, y1, x2, y2 = map(int, bbox)
 
         print("Running pose estimation...")
-        pose_results = pose_model(image, conf=0.25, iou=0.45, classes=[0], device=device, verbose=False)
+        pose_results = pose_model(image, conf=YOLO_CONF_THRESHOLD, iou=YOLO_IOU_THRESHOLD, classes=[0], device=device, verbose=False)
         
         if not pose_results or pose_results[0].keypoints is None:
             print("Poses detected, but keypoints missing. Exiting.")
