@@ -1,6 +1,11 @@
 */__pycache__
 dataset/HumanAct12_Categorized
+dataset/HumanAct12
 iofiles/*.png
 iofiles/*.jpg
 iofiles/*.jpeg
 iofiles/*.pt
+iofiles/*.gif
+iofiles/*.h5
+iofiles/*.npy
+iofiles/seed_info.npz

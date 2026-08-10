@@ -5,10 +5,18 @@ from tensorflow.keras import layers, models, Input
 from tensorflow.keras.callbacks import ReduceLROnPlateau
 from losses import weighted_loss
 from tensorflow.keras.optimizers import Adam
+from config import (
+    SEQUENCE_LENGTH,
+    NUM_JOINTS,
+    NUM_CLASSES,
+    PROCESSED_DATASET_PATH,
+    MODEL_PATH,
+    TRAINING_HISTORY_PATH
+)
 
 
 class ActionRNNModel:
-    def __init__(self, sequence_length=20, num_joints=13, num_classes=3):
+    def __init__(self, sequence_length=SEQUENCE_LENGTH, num_joints=NUM_JOINTS, num_classes=NUM_CLASSES):
         self.sequence_length = sequence_length
         self.num_joints = num_joints
         self.num_classes = num_classes
@@ -66,27 +74,19 @@ class ActionRNNModel:
         self.model.summary()
 
 def main():
-    script_dir = os.path.dirname(os.path.abspath(__file__))
-    workspace_dir = os.path.dirname(script_dir)
-    iofiles_dir = os.path.join(workspace_dir, 'iofiles')
-    os.makedirs(iofiles_dir, exist_ok=True)
-
-    dataset_file = os.path.join(iofiles_dir, 'processed_dataset.npz')
-    model_path = os.path.join(iofiles_dir, 'action_rnn_model.h5')
-
-    if not os.path.exists(dataset_file):
-        print(f"Error: Processed dataset '{dataset_file}' not found. Please run Dataset_Preprocessor.py first.")
+    if not os.path.exists(PROCESSED_DATASET_PATH):
+        print(f"Error: Processed dataset '{PROCESSED_DATASET_PATH}' not found. Please run Dataset_Preprocessor.py first.")
         return
 
-    print(f"Loading processed dataset from '{dataset_file}'...")
-    data = np.load(dataset_file)
+    print(f"Loading processed dataset from '{PROCESSED_DATASET_PATH}'...")
+    data = np.load(PROCESSED_DATASET_PATH)
     X_pose = data['X']        # (N, 20, 13, 2)
     y_target = data['y']      # (N, 20, 13, 2)
-    X_action = data['actions']# (N, 20, 3)
+    X_action = data['actions']# (N, 20, 7)
 
     print(f"Loaded X_pose: {X_pose.shape}, X_action: {X_action.shape}, y_target: {y_target.shape}")
 
-    rnn_model = ActionRNNModel(sequence_length=20, num_joints=13, num_classes=3)
+    rnn_model = ActionRNNModel()
     rnn_model.summary()
     rnn_model.compile()
 
@@ -94,9 +94,17 @@ def main():
 
     # Train model
     print("\nStarting model training with weighted_loss (1.0 * MSE + 2.0 * MPJPE)...")
-    rnn_model.fit(X_pose, X_action, y_target, epochs=100, batch_size=64, reduce_lr_callback=reduce_lr)
+    history = rnn_model.fit(X_pose, X_action, y_target, epochs=20, batch_size=128, reduce_lr_callback=reduce_lr)
 
-    rnn_model.save(model_path)
+    rnn_model.save(MODEL_PATH)
+
+    import json
+    with open(TRAINING_HISTORY_PATH, 'w') as f:
+        # Convert float32 values in history to float for JSON serialization
+        json_history = {k: [float(v) for v in vals] for k, vals in history.history.items()}
+        json.dump(json_history, f)
+    print(f"\nSaved training history to '{TRAINING_HISTORY_PATH}'.")
+    print("Run 'Visualize_Model_Metrics.py' to plot metrics and view model statistics.")
 
 if __name__ == "__main__":
     main()

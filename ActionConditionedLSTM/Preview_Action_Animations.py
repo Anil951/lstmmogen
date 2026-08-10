@@ -4,13 +4,12 @@ import matplotlib
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 
-# 13-point skeleton topology matching pose_extractor.py
-SKELETON_BONES = [
-    (0, 1), (0, 2), (1, 2),          # Face to shoulders & shoulder line
-    (1, 3), (3, 5), (2, 4), (4, 6),  # Arms
-    (1, 7), (2, 8), (7, 8),          # Torso
-    (7, 9), (9, 11), (8, 10), (10, 12) # Legs
-]
+from config import (
+    SKELETON_BONES,
+    SEED_INFO_PATH,
+    GENERATED_MOTION_PATH,
+    COMPARISON_GIF_PATH
+)
 
 def preview_side_by_side(seed_info_path, save_gif=False, output_gif=None):
     """
@@ -155,20 +154,11 @@ def preview_single(npy_path, save_gif=False, output_gif=None):
 
 
 def main():
-    script_dir = os.path.dirname(os.path.abspath(__file__))
-    workspace_dir = os.path.dirname(script_dir)
-    iofiles_dir = os.path.join(workspace_dir, 'iofiles')
-    os.makedirs(iofiles_dir, exist_ok=True)
-
-    seed_info_path = os.path.join(iofiles_dir, 'seed_info.npz')
-
-    if os.path.exists(seed_info_path):
-        gif_path = os.path.join(iofiles_dir, 'comparison.gif')
-        preview_side_by_side(seed_info_path, save_gif=True, output_gif=gif_path)
+    if os.path.exists(SEED_INFO_PATH):
+        preview_side_by_side(SEED_INFO_PATH, save_gif=True, output_gif=COMPARISON_GIF_PATH)
     else:
-        npy_path = os.path.join(iofiles_dir, 'generated_action_motion.npy')
-        gif_path = os.path.join(iofiles_dir, 'generated_action_motion.gif')
-        preview_single(npy_path, save_gif=True, output_gif=gif_path)
+        gif_path = GENERATED_MOTION_PATH.replace('.npy', '.gif')
+        preview_single(GENERATED_MOTION_PATH, save_gif=True, output_gif=gif_path)
 
 if __name__ == "__main__":
     main()

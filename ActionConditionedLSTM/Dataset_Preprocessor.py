@@ -2,8 +2,13 @@ import os
 import glob
 import numpy as np
 
-ACTION_CLASSES = ['run', 'walk', 'jump_vertical']
-CLASS_MAP = {cls_name: idx for idx, cls_name in enumerate(ACTION_CLASSES)}
+from config import (
+    ACTION_CLASSES,
+    CLASS_MAP,
+    SEQUENCE_LENGTH,
+    CATEGORIZED_DATASET_DIR,
+    PROCESSED_DATASET_PATH
+)
 
 def extract_13_keypoints_2d(motion_data_3d):
     """
@@ -66,7 +71,7 @@ def normalize_keypoints_pose_extractor(pts_frame):
     pts[:, 1] = -pts[:, 1]  # Flip Y so Head is UP
     return pts
 
-def create_action_sequences(dataset_dir, seq_length=20):
+def create_action_sequences(dataset_dir, seq_length=SEQUENCE_LENGTH):
     X_list = []
     y_list = []
     actions_list = []
@@ -113,17 +118,9 @@ def create_action_sequences(dataset_dir, seq_length=20):
     return X, y, actions
 
 def main():
-    script_dir = os.path.dirname(os.path.abspath(__file__))
-    workspace_dir = os.path.dirname(script_dir)
-    dataset_dir = os.path.join(workspace_dir, 'dataset', 'HumanAct12_Categorized')
-    
-    iofiles_dir = os.path.join(workspace_dir, 'iofiles')
-    os.makedirs(iofiles_dir, exist_ok=True)
-    save_path = os.path.join(iofiles_dir, 'processed_dataset.npz')
-
-    X, y, actions = create_action_sequences(dataset_dir)
-    np.savez(save_path, X=X, y=y, actions=actions)
-    print(f"Saved processed dataset to '{save_path}'")
+    X, y, actions = create_action_sequences(CATEGORIZED_DATASET_DIR)
+    np.savez(PROCESSED_DATASET_PATH, X=X, y=y, actions=actions)
+    print(f"Saved processed dataset to '{PROCESSED_DATASET_PATH}'")
 
 if __name__ == "__main__":
     main()

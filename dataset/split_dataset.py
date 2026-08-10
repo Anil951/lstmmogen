@@ -1,16 +1,18 @@
 import os
 import shutil
 
-# Configuration
-DATASET_DIR = os.path.join(os.path.dirname(__file__), "motion_generator", "dataset", "HumanAct12")
-OUTPUT_BASE_DIR = os.path.join(os.path.dirname(__file__), "motion_generator", "dataset", "HumanAct12_Categorized")
+import sys
 
-# Target action codes and their names
-TARGET_ACTIONS = {
-    "0201": "walk",
-    "0301": "run",
-    "0402": "jump_vertical",
-}
+# Ensure root directory is in sys.path so we can import config
+script_dir = os.path.dirname(os.path.abspath(__file__))
+workspace_dir = os.path.dirname(script_dir)
+sys.path.append(workspace_dir)
+
+from ActionConditionedLSTM.config import (
+    DATASET_DIR,
+    CATEGORIZED_DATASET_DIR as OUTPUT_BASE_DIR,
+    TARGET_ACTIONS
+)
 
 def main():
     if not os.path.exists(DATASET_DIR):
@@ -54,8 +56,8 @@ def main():
     print("\nSort Summary:")
     for action_name, count in count_dict.items():
         print(f"  {action_name}: {count} files")
-    print(f"\nIgnored {ignored_count} files (not belonging to the 3 target categories).")
-    print(f"\nAll 3 categories have been separated into: {OUTPUT_BASE_DIR}")
+    print(f"\nIgnored {ignored_count} files (not belonging to the {len(TARGET_ACTIONS)} target categories).")
+    print(f"\nAll {len(TARGET_ACTIONS)} categories have been separated into: {OUTPUT_BASE_DIR}")
 
 if __name__ == "__main__":
     main()

@@ -1,12 +1,21 @@
 import os
-import json
+import glob
 import numpy as np
 import tensorflow as tf
 from tensorflow.keras.models import load_model
-from ActionConditionedRNN.losses import weighted_loss
-
-ACTION_CLASSES = ['run', 'walk', 'jump_vertical']
-CLASS_MAP = {cls_name: idx for idx, cls_name in enumerate(ACTION_CLASSES)}
+from losses import weighted_loss
+from Dataset_Preprocessor import extract_13_keypoints_2d, normalize_keypoints_pose_extractor
+from config import (
+    ACTION_CLASSES,
+    CLASS_MAP,
+    SEQUENCE_LENGTH,
+    NUM_JOINTS,
+    NUM_CLASSES,
+    MODEL_PATH,
+    GENERATED_MOTION_PATH as OUTPUT_NPY,
+    SEED_INFO_PATH,
+    WORKSPACE_DIR
+)
 
 def normalize_keypoints_pose_extractor(pts_frame):
     """
@@ -31,7 +40,7 @@ def normalize_keypoints_pose_extractor(pts_frame):
     return pts
 
 class ActionPosePredictor:
-    def __init__(self, model_path, sequence_length=20, num_joints=13, num_classes=3):
+    def __init__(self, model_path, sequence_length=SEQUENCE_LENGTH, num_joints=NUM_JOINTS, num_classes=NUM_CLASSES):
         self.sequence_length = sequence_length
         self.num_joints = num_joints
         self.num_classes = num_classes
@@ -85,43 +94,38 @@ def load_initial_frame_from_json(json_path):
     return kpts
 
 def main():
-    script_dir = os.path.dirname(os.path.abspath(__file__))
-    workspace_dir = os.path.dirname(script_dir)
-    iofiles_dir = os.path.join(workspace_dir, 'iofiles')
-    os.makedirs(iofiles_dir, exist_ok=True)
-
-    model_path = os.path.join(iofiles_dir, 'action_rnn_model.h5')
-    output_npy = os.path.join(iofiles_dir, 'generated_action_motion.npy')
-    seed_info_path = os.path.join(iofiles_dir, 'seed_info.npz')
-
-    dataset_file = os.path.join(iofiles_dir, 'processed_dataset.npz')
-    if not os.path.exists(dataset_file):
-        print(f"Error: Processed dataset '{dataset_file}' not found. Please run Dataset_Preprocessor.py first.")
-        return
-
-    data = np.load(dataset_file)
-    X_all = data['X']         # (N, 20, 13, 2)
-    y_all = data['y']         # (N, 20, 13, 2)
-    actions_all = data['actions'] # (N, 20, 3)
-
     # Action choice: 'run', 'walk', or 'jump_vertical'
-    action_choice = 'walk'
+    action_choice = 'jump_vertical'
     cls_idx = CLASS_MAP[action_choice]
 
-    # Filter samples belonging to the chosen action class
-    action_mask = actions_all[:, 0, cls_idx] == 1.0
-    X_class = X_all[action_mask]
-    y_class = y_all[action_mask]
+    raw_dataset_dir = os.path.join(WORKSPACE_DIR, 'dataset', 'HumanAct12_Categorized', action_choice)
+    files = glob.glob(os.path.join(raw_dataset_dir, '*.npy'))
+    if not files:
+        print(f"Error: No raw dataset files found for action '{action_choice}' in {raw_dataset_dir}")
+        return
 
-    # Randomly pick a sample index from this class
-    rand_idx = np.random.randint(0, len(X_class))
-    seed_sequence = X_class[rand_idx]  # (20, 13, 2)
-    ground_truth_next = y_class[rand_idx]  # (20, 13, 2) — the real next-frame targets
+    # Find files that are long enough to provide a meaningful ground truth continuation
+    num_gen_frames = 100
+    valid_files = [f for f in files if np.load(f).shape[0] >= SEQUENCE_LENGTH + 10]
+    if not valid_files:
+        valid_files = files  # fallback if none are long enough
 
-    print(f"Action: '{action_choice}', Class samples: {len(X_class)}, Random seed index: {rand_idx}")
+    rand_file = valid_files[np.random.randint(0, len(valid_files))]
+    motion_3d = np.load(rand_file)
+    print(f"Action: '{action_choice}', Selected raw file: {os.path.basename(rand_file)} (Total frames: {motion_3d.shape[0]})")
+
+    # Extract and normalize directly
+    kpts_2d = extract_13_keypoints_2d(motion_3d)
+    norm_kpts = np.array([normalize_keypoints_pose_extractor(f) for f in kpts_2d], dtype=np.float32)
+
+    # Split into seed (first SEQUENCE_LENGTH frames) and true ground truth future (remaining frames)
+    seed_sequence = norm_kpts[:SEQUENCE_LENGTH]
+    ground_truth_next = norm_kpts[SEQUENCE_LENGTH : SEQUENCE_LENGTH + num_gen_frames]
+
     print(f"Seed sequence shape: {seed_sequence.shape}")
+    print(f"True Ground truth future shape: {ground_truth_next.shape}")
 
-    predictor = ActionPosePredictor(model_path=model_path)
+    predictor = ActionPosePredictor(model_path=MODEL_PATH)
 
     num_gen_frames = 100
     print(f"\nGenerating {num_gen_frames} frames of animation for action: '{action_choice}'...")
@@ -129,16 +133,16 @@ def main():
     generated = predictor.generate_points(seed_sequence, action_name=action_choice, num_iterations=num_gen_frames)
 
     # Save generated motion
-    np.save(output_npy, generated)
-    print(f"Saved generated motion (shape: {generated.shape}) to '{output_npy}'")
+    np.save(OUTPUT_NPY, generated)
+    print(f"Saved generated motion (shape: {generated.shape}) to '{OUTPUT_NPY}'")
 
     # Save seed info for side-by-side preview comparison
-    np.savez(seed_info_path,
+    np.savez(SEED_INFO_PATH,
              seed_sequence=seed_sequence,
              ground_truth_next=ground_truth_next,
              generated=generated,
              action_name=np.array(action_choice))
-    print(f"Saved seed info for preview comparison to '{seed_info_path}'")
+    print(f"Saved seed info for preview comparison to '{SEED_INFO_PATH}'")
 
 if __name__ == "__main__":
     main()
