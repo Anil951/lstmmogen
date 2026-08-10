@@ -1,0 +1,6 @@
+*/__pycache__
+dataset/HumanAct12_Categorized
+iofiles/*.png
+iofiles/*.jpg
+iofiles/*.jpeg
+iofiles/*.pt

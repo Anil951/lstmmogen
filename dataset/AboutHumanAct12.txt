@@ -1,0 +1,58 @@
+HumanAct12 dataset is maintained by Chuan Guo(cguo2@ualberta.ca).
+
+HumanAct12 is adopted from the polar image and 3D pose dataset PHSPD, with proper temporal cropping and action annotating.
+
+Statistically, there are 1191 3D motion clips which are categorized into 12 action classes, and 34 sub-classes. The detailed statistics of HumanAct12 could be referred to Our paper.
+
+Our data is in numpy array format, each motion owns the dimensions of (motion_length, joints_num, 3). 
+Each pose consists of 24 joints, and the kinematic chains are as follows:
+Spine: [0, 3, 6, 9, 12, 15];
+Legs: [0, 1, 4, 7, 10], [0, 2, 5, 8, 11];
+Arms: [9, 13, 16, 18, 20, 22], [9, 14, 17, 19, 21, 23]
+
+We adopt the name rule of NTU_RGBD, each motion is named in format "PxxGxxRxxFxxxTxxxAxxx.npy".
+Axxx indicates the action classes:
+	A0101: "warm_up_wristankle",
+	A0102: "warm_up_pectoral",
+	A0103: "warm_up_eblowback",
+	A0104: "warm_up_bodylean_right_arm",
+	A0105: "warm_up_bodylean_left_arm",
+	A0106: "warm_up_bow_right",
+	A0107: "warm_up_bow_left",
+	A0201: "walk",
+	A0301: "run",
+	A0401: "jump_handsup",
+	A0402: "jump_vertical",
+	A0501: "drink_bottle_righthand",
+	A0502: "drink_bottle_lefthand",
+	A0503: "drink_cup_righthand",
+	A0504: "drink_cup_lefthand",
+	A0505: "drink_both_hands",
+	A0601: "lift_dumbbell with _right hand",
+	A0602: "lift_dumbbell with _left hand",
+	A0603: "Lift dumbells with both hands",
+	A0604: "lift_dumbbell over head",
+	A0605: "lift_dumbells with both hands and bend legs",
+	A0701: "sit",
+	A0801: "eat_finger_right",
+	A0802: "eat_pie/hamburger",
+	A0803: "Eat with left hand",
+	A0901: "Turn steering wheel",
+	A1001: "Take out phone, call and put phone back",
+	A1002: "Call with left hand",
+	A1101: "boxing_left_right",
+	A1102: "boxing_left_upwards",
+	A1103: "boxing_right_upwards",
+	A1104: "boxing_right_left",
+	A1201: "throw_right_hand",
+	A1202: "throw_both_hands",
+
+P, G, R, F, T are used to register HumanAct12 with PHSPD dataset:
+	Pxx: subject id in PHSPD(e.g. P01 <-> subject01)
+	Gxx: group id in PHSPD(e.g. G01 <-> group1)
+	Rxx: repetition id in PHSPD(e.g. R01 <-> time1)
+	FffffTtttt: this motion clip is cropped From frame id ffff, to frame id tttt.
+
+For example, "P10G01R02F0345T0464A0201" means this motion clip is cropped from frame 345 to frame 464 in motion "subject10_group1_time2" of PHSPD, and categoried as action "walk".
+
+One could access dataset PHSPD for more meta-source(e.g. polar image, depth image, etc). Please refer to "https://jimmyzou.github.io/publication/2020-PHSPDataset" for details of PHSPD.
