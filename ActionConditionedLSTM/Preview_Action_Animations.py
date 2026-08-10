@@ -45,7 +45,7 @@ def preview_side_by_side(seed_info_path, save_gif=False, output_gif=None):
     x_min, x_max = all_data[:, :, 0].min() - 0.3, all_data[:, :, 0].max() + 0.3
     y_min, y_max = all_data[:, :, 1].min() - 0.3, all_data[:, :, 1].max() + 0.3
 
-    fig, (ax_gt, ax_gen) = plt.subplots(1, 2, figsize=(14, 7))
+    fig, (ax_gt, ax_gen) = plt.subplots(1, 2, figsize=(8, 4))
     fig.suptitle(f"Action: '{action_name}' — Ground Truth vs Generated", fontsize=14, fontweight='bold')
 
     for ax, title in [(ax_gt, "Ground Truth (Dataset)"), (ax_gen, "Generated (Model)")]:
@@ -114,7 +114,7 @@ def preview_single(npy_path, save_gif=False, output_gif=None):
     all_points = np.load(npy_path)
     print(f"Loaded animation sequence from '{npy_path}' with shape {all_points.shape}")
 
-    fig, ax = plt.subplots(figsize=(6, 6))
+    fig, ax = plt.subplots(figsize=(4, 4))
     x_min, x_max = all_points[:, :, 0].min() - 0.3, all_points[:, :, 0].max() + 0.3
     y_min, y_max = all_points[:, :, 1].min() - 0.3, all_points[:, :, 1].max() + 0.3
     ax.set_xlim(x_min, x_max)

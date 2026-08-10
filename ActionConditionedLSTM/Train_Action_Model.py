@@ -41,7 +41,7 @@ class ActionRNNModel:
         x = layers.LSTM(128, return_sequences=True, dropout=0.2)(x)
         # Wider Dense layers with Batch Normalization
         x = layers.TimeDistributed(layers.Dense(128, activation='relu'))(x)
-        x = layers.BatchNormalization()(x)
+        x = layers.LayerNormalization()(x)
         x = layers.Dropout(0.2)(x)
         x = layers.TimeDistributed(layers.Dense(64, activation='relu'))(x)
         # Output mapping
@@ -52,15 +52,16 @@ class ActionRNNModel:
         return model
 
     def compile(self):
-        self.model.compile(optimizer=Adam(learning_rate=0.01), loss=weighted_loss)
+        self.model.compile(optimizer=Adam(learning_rate=0.001), loss=weighted_loss)
 
-    def fit(self, X_pose, X_action, y_target, epochs=200, batch_size=64, reduce_lr_callback=None):
+    def fit(self, X_pose, X_action, y_target, epochs=200, batch_size=64, reduce_lr_callback=None, validation_split=0.15):
         callbacks = [reduce_lr_callback] if reduce_lr_callback else []
         history = self.model.fit(
             [X_pose, X_action],
             y_target,
             batch_size=batch_size,
             epochs=epochs,
+            validation_split=validation_split,
             callbacks=callbacks
         )
         return history
@@ -84,17 +85,27 @@ def main():
     y_target = data['y']      # (N, 20, 13, 2)
     X_action = data['actions']# (N, 20, 7)
 
-    print(f"Loaded X_pose: {X_pose.shape}, X_action: {X_action.shape}, y_target: {y_target.shape}")
+    # SHUFFLE DATA BEFORE SPLIT
+    # Keras validation_split takes the last N% of the data before shuffling. 
+    # Since data is generated in class-order, we MUST shuffle it here so the validation set has all classes!
+    np.random.seed(42)
+    indices = np.arange(X_pose.shape[0])
+    np.random.shuffle(indices)
+    X_pose = X_pose[indices]
+    y_target = y_target[indices]
+    X_action = X_action[indices]
+
+    print(f"Loaded and shuffled X_pose: {X_pose.shape}, X_action: {X_action.shape}, y_target: {y_target.shape}")
 
     rnn_model = ActionRNNModel()
     rnn_model.summary()
     rnn_model.compile()
 
-    reduce_lr = ReduceLROnPlateau(monitor='loss', factor=0.5, patience=5, min_lr=1e-20)
+    reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.5, patience=2, min_lr=1e-6)
 
     # Train model
     print("\nStarting model training with weighted_loss (1.0 * MSE + 2.0 * MPJPE)...")
-    history = rnn_model.fit(X_pose, X_action, y_target, epochs=20, batch_size=128, reduce_lr_callback=reduce_lr)
+    history = rnn_model.fit(X_pose, X_action, y_target, epochs=20, batch_size=128, reduce_lr_callback=reduce_lr, validation_split=0.15)
 
     rnn_model.save(MODEL_PATH)
 

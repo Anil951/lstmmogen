@@ -9,3 +9,4 @@ iofiles/*.gif
 iofiles/*.h5
 iofiles/*.npy
 iofiles/seed_info.npz
+iofiles/*.json

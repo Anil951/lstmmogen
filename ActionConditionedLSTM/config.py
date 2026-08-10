@@ -20,6 +20,7 @@ COMPARISON_GIF_PATH = os.path.join(IOFILES_DIR, 'comparison.gif')
 SEQUENCE_LENGTH = 20
 NUM_JOINTS = 13
 POSE_DIM = NUM_JOINTS * 2
+TARGET_SAMPLING_PROB = 0.5
 
 # Actions Config
 TARGET_ACTIONS = {
@@ -28,13 +29,12 @@ TARGET_ACTIONS = {
     "0402": "jump_vertical",
     "1202": "throw_both_hands",
     "1104": "boxing_right_left",
-    "0505": "drink_both_hands",
     "0401": "jump_handsup",
 }
 
 ACTION_CLASSES = [
     'run', 'walk', 'jump_vertical',
-    'throw_both_hands', 'boxing_right_left', 'drink_both_hands', 'jump_handsup'
+    'throw_both_hands', 'boxing_right_left', 'jump_handsup'
 ]
 NUM_CLASSES = len(ACTION_CLASSES)
 CLASS_MAP = {cls_name: idx for idx, cls_name in enumerate(ACTION_CLASSES)}

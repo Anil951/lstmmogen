@@ -76,6 +76,16 @@ class ActionPosePredictor:
         for i in range(num_iterations):
             out_seq = self.model.predict([input_pose_seq, one_hot], verbose=0)
             pred_pose = out_seq[0, -1, :, :]
+            
+            # --- FIX: ENFORCE SCALE AND CENTER ---
+            # Models naturally regress to the mean (shrink) when predicting under uncertainty.
+            # We must re-center and re-scale the prediction so the model always receives a perfectly sized skeleton for the next step.
+            hip_mid = (pred_pose[7] + pred_pose[8]) / 2.0
+            pred_pose = pred_pose - hip_mid
+            torso_length = np.linalg.norm((pred_pose[1] + pred_pose[2]) / 2.0)
+            if torso_length > 1e-6:
+                pred_pose = pred_pose / torso_length
+            
             generated_points[i] = pred_pose
 
             # Shift sliding window forward by 1 frame
@@ -94,7 +104,6 @@ def load_initial_frame_from_json(json_path):
     return kpts
 
 def main():
-    # Action choice: 'run', 'walk', or 'jump_vertical'
     action_choice = 'jump_vertical'
     cls_idx = CLASS_MAP[action_choice]
 
@@ -105,7 +114,7 @@ def main():
         return
 
     # Find files that are long enough to provide a meaningful ground truth continuation
-    num_gen_frames = 100
+    num_gen_frames = 60
     valid_files = [f for f in files if np.load(f).shape[0] >= SEQUENCE_LENGTH + 10]
     if not valid_files:
         valid_files = files  # fallback if none are long enough
@@ -127,7 +136,6 @@ def main():
 
     predictor = ActionPosePredictor(model_path=MODEL_PATH)
 
-    num_gen_frames = 100
     print(f"\nGenerating {num_gen_frames} frames of animation for action: '{action_choice}'...")
 
     generated = predictor.generate_points(seed_sequence, action_name=action_choice, num_iterations=num_gen_frames)

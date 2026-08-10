@@ -49,7 +49,10 @@ def main():
     ax1.set_xlabel('Epoch')
     ax1.set_ylabel('Loss (weighted_loss)', color=color, fontweight='bold')
     ax1.plot(history['loss'], color=color, label='Training Loss', linewidth=2)
+    if 'val_loss' in history:
+        ax1.plot(history['val_loss'], color='tab:orange', label='Validation Loss', linewidth=2)
     ax1.tick_params(axis='y', labelcolor=color)
+    ax1.legend(loc='upper left')
     ax1.grid(True, linestyle='--', alpha=0.6)
 
     if 'lr' in history:
